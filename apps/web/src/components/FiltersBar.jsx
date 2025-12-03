@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
-import { Search, X, Check, ChevronDown } from "lucide-react";
+import { Search, X, ChevronDown } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 
 export default function FiltersBar({

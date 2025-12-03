@@ -18,9 +18,11 @@ export default defineConfig({
   envPrefix: 'NEXT_PUBLIC_',
   build: {
     target: 'es2022', // Support top-level await
+    sourcemap: false, // Disable sourcemaps in production to avoid warnings
     rollupOptions: {
       output: {
         manualChunks: undefined,
+        sourcemap: false,
       },
     },
   },
