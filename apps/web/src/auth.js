@@ -250,6 +250,8 @@ function Adapter(client) {
     },
   };
 }
+// Supabase Postgres connection (not Neon)
+// postgresql://postgres:***@db.arlgghjxeffmeqblkucz.supabase.co:5432/postgres
 const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
     });

@@ -1,8 +1,8 @@
+import { createServerClient } from "@/app/api/utils/supabase-server";
 import sql from "@/app/api/utils/sql";
 
-// NEW: Optional Supabase REST support
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Feature flag: Use Supabase if data is migrated
+const USE_SUPABASE = process.env.USE_SUPABASE === 'true';
 
 export async function GET() {
   const cacheHeaders = {
@@ -10,50 +10,33 @@ export async function GET() {
     "Content-Type": "application/json",
   };
 
-  // Try Supabase first if configured
-  if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      const url = new URL("/rest/v1/city", SUPABASE_URL);
-      url.searchParams.set(
-        "select",
-        "country,city,name,timezone,currency,center_lat,center_lng,neighborhoods",
-      );
-      url.searchParams.set("order", "name");
+  try {
+    // NEW: Supabase-first approach
+    if (USE_SUPABASE) {
+      const supabase = createServerClient();
+      const { data: rows, error } = await supabase
+        .from('city')
+        .select('country, city, name, timezone, currency, center_lat, center_lng, neighborhoods')
+        .order('name');
 
-      const res = await fetch(url.toString(), {
-        headers: {
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          Accept: "application/json",
-        },
-      });
-      if (!res.ok) {
-        throw new Error(
-          `Supabase /city REST returned [${res.status}] ${res.statusText}`,
-        );
-      }
-      const rows = await res.json();
+      if (error) throw error;
+
       return new Response(JSON.stringify({ cities: rows || [] }), {
         headers: cacheHeaders,
       });
-    } catch (err) {
-      console.error("GET /api/cities Supabase error", err);
-      // Fall through to DB below
     }
-  }
 
-  // Platform DB
-  try {
-    const rows =
-      await sql`SELECT country, city, name, timezone, currency, center_lat, center_lng, neighborhoods FROM city ORDER BY name`;
+    // LEGACY: Neon fallback (during migration period)
+    const rows = await sql`SELECT country, city, name, timezone, currency, center_lat, center_lng, neighborhoods FROM city ORDER BY name`;
     return new Response(JSON.stringify({ cities: rows || [] }), {
       headers: cacheHeaders,
     });
+
   } catch (err) {
     console.error("GET /api/cities error", err);
-    return new Response(JSON.stringify({ cities: [] }), {
-      status: 200,
-      headers: cacheHeaders,
+    return new Response(JSON.stringify({ error: "Failed to load cities" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   }
 }
