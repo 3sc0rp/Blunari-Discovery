@@ -18,7 +18,7 @@ import { neon } from '@neondatabase/serverless';
 import { createClient } from '@supabase/supabase-js';
 
 // Validate environment variables
-const NEON_URL = process.env.DATABASE_URL;
+const NEON_URL = process.env.NEON_DATABASE_URL;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
